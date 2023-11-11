@@ -1,10 +1,13 @@
 package com.wk.shop_online.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wk.shop_online.entity.IndexCarousel;
 import com.wk.shop_online.mapper.IndexCarouselMapper;
 import com.wk.shop_online.service.IndexCarouselService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * <p>
@@ -16,5 +19,14 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class IndexCarouselServiceImpl extends ServiceImpl<IndexCarouselMapper, IndexCarousel> implements IndexCarouselService {
-
+    @Override
+    public List<IndexCarousel> getList(Integer distributionSite){
+        LambdaQueryWrapper<IndexCarousel> wrapper = new LambdaQueryWrapper<>();
+        if(distributionSite != null){
+            wrapper.eq(IndexCarousel::getType,distributionSite);
+        }
+        wrapper.orderByDesc(IndexCarousel::getCreateTime);
+        List<IndexCarousel> list = baseMapper.selectList(wrapper);
+        return list;
+    }
 }
