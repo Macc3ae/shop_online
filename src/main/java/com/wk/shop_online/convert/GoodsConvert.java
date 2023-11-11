@@ -4,7 +4,7 @@ import com.wk.shop_online.entity.Goods;
 import com.wk.shop_online.vo.GoodsVO;
 import com.wk.shop_online.vo.RecommendGoodsVO;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.annotations.Mapper;
+import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
