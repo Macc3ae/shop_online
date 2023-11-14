@@ -61,7 +61,7 @@ public class UserShippingAddressController {
 
     @Operation(summary = "收货地址详情")
     @GetMapping("address/detail")
-    public Result<AddressVO> getAddressDetail(@RequestParam Integer id, HttpServletRequest request){
+    public Result<AddressVO> getAddressDetail(@RequestParam Integer id){
         if(id == null){
             throw new ServerException("请求参数不能为空");
         }
@@ -71,7 +71,7 @@ public class UserShippingAddressController {
 
     @Operation(summary = "删除收货地址")
     @DeleteMapping("address")
-    public Result deleteAddress(@RequestParam Integer id,HttpServletRequest request){
+    public Result deleteAddress(@RequestParam Integer id){
         if(id == null){
             throw new ServerException("请求参数不能为空");
         }
