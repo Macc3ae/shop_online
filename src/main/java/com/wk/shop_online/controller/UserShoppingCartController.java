@@ -1,5 +1,6 @@
 package com.wk.shop_online.controller;
 
+import com.wk.shop_online.common.exception.ServerException;
 import com.wk.shop_online.common.result.Result;
 import com.wk.shop_online.query.CartQuery;
 import com.wk.shop_online.query.EditCartQuery;
@@ -53,5 +54,16 @@ public class UserShoppingCartController {
         CartGoodsVO goodsVO = userShoppingCartService.editCart(query);
         return Result.ok(goodsVO);
 
+    }
+
+    @Operation(summary = "删除/清空购物车单品")
+    @DeleteMapping("remove")
+    public Result removeShopCart(@RequestBody List<Integer> ids, HttpServletRequest request) {
+        Integer userId = getUserId(request);
+        if (ids.size() == 0) {
+            throw new ServerException("请选择需要删除的购物车商品");
+        }
+        userShoppingCartService.removeCartGoods(userId, ids);
+        return Result.ok();
     }
 }

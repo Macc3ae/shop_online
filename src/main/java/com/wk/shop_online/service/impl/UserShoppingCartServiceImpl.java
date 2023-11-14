@@ -1,5 +1,6 @@
 package com.wk.shop_online.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wk.shop_online.common.exception.ServerException;
 import com.wk.shop_online.convert.GoodsConvert;
 import com.wk.shop_online.entity.Goods;
@@ -15,6 +16,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -92,5 +94,15 @@ public class UserShoppingCartServiceImpl extends ServiceImpl<UserShoppingCartMap
         goodsVO.setPicture(goods.getCover());
         goodsVO.setDiscount(goods.getDiscount());
         return goodsVO;
+    }
+
+    @Override
+    public void removeCartGoods(Integer userId, List<Integer> ids) {
+        List<UserShoppingCart> cartList = baseMapper.selectList(new LambdaQueryWrapper<UserShoppingCart>().eq(UserShoppingCart::getUserId,userId));
+        if(cartList.size() == 0){
+            return;
+        }
+        List<UserShoppingCart> deleteCartList = cartList.stream().filter(item -> ids.contains(item.getId())).collect(Collectors.toList());
+        removeBatchByIds(deleteCartList);
     }
 }
