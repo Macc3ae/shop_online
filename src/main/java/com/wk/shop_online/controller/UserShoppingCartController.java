@@ -2,6 +2,7 @@ package com.wk.shop_online.controller;
 
 import com.wk.shop_online.common.result.Result;
 import com.wk.shop_online.query.CartQuery;
+import com.wk.shop_online.query.EditCartQuery;
 import com.wk.shop_online.vo.CartGoodsVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,5 +45,13 @@ public class UserShoppingCartController {
         Integer userId = getUserId(request);
         List<CartGoodsVO> list = userShoppingCartService.shopCartList(userId);
         return Result.ok(list);
+    }
+
+    @Operation(summary = "修改购物车单品")
+    @PutMapping("edit")
+    public Result<CartGoodsVO> editShopCart(@RequestBody @Validated EditCartQuery query) {
+        CartGoodsVO goodsVO = userShoppingCartService.editCart(query);
+        return Result.ok(goodsVO);
+
     }
 }
