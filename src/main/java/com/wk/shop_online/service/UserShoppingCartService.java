@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.wk.shop_online.query.CartQuery;
 import com.wk.shop_online.vo.CartGoodsVO;
 
+import java.util.List;
+
 /**
  * <p>
  *  服务类
@@ -16,4 +18,6 @@ import com.wk.shop_online.vo.CartGoodsVO;
 public interface UserShoppingCartService extends IService<UserShoppingCart> {
 
     CartGoodsVO addShopCart(CartQuery query);
+
+    List<CartGoodsVO> shopCartList(Integer userId);
 }

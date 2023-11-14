@@ -1,6 +1,7 @@
 package com.wk.shop_online.service.impl;
 
 import com.wk.shop_online.common.exception.ServerException;
+import com.wk.shop_online.convert.GoodsConvert;
 import com.wk.shop_online.entity.Goods;
 import com.wk.shop_online.entity.UserShoppingCart;
 import com.wk.shop_online.mapper.GoodsMapper;
@@ -11,6 +12,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wk.shop_online.vo.CartGoodsVO;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * <p>
@@ -54,5 +57,11 @@ public class UserShoppingCartServiceImpl extends ServiceImpl<UserShoppingCartMap
         goodsVO.setPicture(goods.getCover());
         goodsVO.setDiscount(goods.getDiscount());
         return goodsVO;
+    }
+
+    @Override
+    public List<CartGoodsVO> shopCartList(Integer userId) {
+        List<CartGoodsVO> list = baseMapper.getCartGoodsInfo(userId);
+        return list;
     }
 }
