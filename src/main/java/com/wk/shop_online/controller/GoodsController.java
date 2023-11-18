@@ -1,10 +1,13 @@
 package com.wk.shop_online.controller;
 
+import com.wk.shop_online.common.result.PageResult;
 import com.wk.shop_online.common.result.Result;
+import com.wk.shop_online.query.Query;
 import com.wk.shop_online.query.RecommendByTabGoodsQuery;
 import com.wk.shop_online.service.GoodsService;
 import com.wk.shop_online.vo.GoodsVO;
 import com.wk.shop_online.vo.IndexTabRecommendVO;
+import com.wk.shop_online.vo.RecommendGoodsVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -38,5 +41,12 @@ public class GoodsController {
     public Result<GoodsVO> getGoodsDetail(@RequestParam Integer id) {
         GoodsVO goodsDetail = goodsService.getGoodsDetail(id);
         return Result.ok(goodsDetail);
+    }
+
+    @Operation(summary = "首页-猜你喜欢")
+    @PostMapping("guessLike")
+    public Result<PageResult<RecommendGoodsVO>> getRecommendGoodsByPage(@RequestBody @Validated Query query) {
+        PageResult<RecommendGoodsVO> result = goodsService.getRecommendGoodsByPage(query);
+        return Result.ok(result);
     }
 }
