@@ -9,6 +9,7 @@ import com.wk.shop_online.convert.UserAddressConvert;
 import com.wk.shop_online.convert.UserOrderDetailConvert;
 import com.wk.shop_online.entity.*;
 import com.wk.shop_online.mapper.GoodsMapper;
+import com.wk.shop_online.mapper.UserOrderGoodsMapper;
 import com.wk.shop_online.mapper.UserOrderMapper;
 import com.wk.shop_online.query.CancelGoodsQuery;
 import com.wk.shop_online.query.OrderGoodsQuery;
@@ -274,7 +275,7 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
     public PageResult<OrderDetailVO> getOrderList(OrderQuery query) {
         List<OrderDetailVO> list = new ArrayList<>();
         Page<UserOrder> page = new Page<>(query.getPage(),query.getPage());
-        LambdaQueryWrapper<Object> wrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<UserOrder> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserOrder::getUserId,query.getUserId());
         if(query.getOrderType() != null && query.getOrderType() != 0) {
             wrapper.eq(UserOrder::getStatus,query.getOrderType());
@@ -325,6 +326,23 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
         orderDetailVO.setSkus((goodsList));
 
         return orderDetailVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteOrder(List<Integer> ids,Integer userId) {
+        LambdaQueryWrapper<UserOrder> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserOrder::getUserId, userId);
+        wrapper.eq(UserOrder::getStatus,OrderStatusEnum.WAITING_FOR_REVIEW.getValue()).or().eq(UserOrder::getStatus,OrderStatusEnum.COMPLETED.getValue()).or().eq(UserOrder::getStatus,OrderStatusEnum.CANCELLED.getValue());
+        List<UserOrder> userOrders = baseMapper.selectList(wrapper);
+        List<UserOrder> list = userOrders.stream().filter(item -> ids.contains(item.getId())).collect(Collectors.toList());
+        if(list.size() == 0){
+            throw new ServerException("暂无可删除的订单");
+        }
+        removeByIds(list);
+        for (UserOrder userOrder : list){
+            UserOrderGoodsMapper.delete(new LambdaQueryWrapper<UserOrderGoods>().eq(UserOrderGoods::getOrderId,userOrder.getId()));
+        }
     }
 
     @Async
