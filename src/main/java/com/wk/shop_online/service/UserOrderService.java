@@ -3,6 +3,7 @@ package com.wk.shop_online.service;
 import com.wk.shop_online.common.result.PageResult;
 import com.wk.shop_online.entity.UserOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.wk.shop_online.query.CancelGoodsQuery;
 import com.wk.shop_online.query.OrderPreQuery;
 import com.wk.shop_online.query.OrderQuery;
 import com.wk.shop_online.vo.OrderDetailVO;
@@ -34,4 +35,6 @@ public interface UserOrderService extends IService<UserOrder> {
     SubmitOrderVO getRepurchaseOrderDetail(Integer id);
 
     PageResult<OrderDetailVO> getOrderList(OrderQuery query);
+
+    OrderDetailVO cancelOrder(CancelGoodsQuery query);
 }

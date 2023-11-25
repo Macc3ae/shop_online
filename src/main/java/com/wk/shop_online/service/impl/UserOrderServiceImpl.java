@@ -10,6 +10,7 @@ import com.wk.shop_online.convert.UserOrderDetailConvert;
 import com.wk.shop_online.entity.*;
 import com.wk.shop_online.mapper.GoodsMapper;
 import com.wk.shop_online.mapper.UserOrderMapper;
+import com.wk.shop_online.query.CancelGoodsQuery;
 import com.wk.shop_online.query.OrderGoodsQuery;
 import com.wk.shop_online.query.OrderPreQuery;
 import com.wk.shop_online.query.OrderQuery;
@@ -298,6 +299,32 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
             list.add(orderDetailVO);
         }
         return new PageResult<>(page.getTotal(),query.getPageSize(),query.getPage(), page.getPages(), list);
+    }
+
+    @Override
+    public OrderDetailVO cancelOrder(CancelGoodsQuery query) {
+        UserOrder userOrder = baseMapper.selectById(query.getId());
+        if(userOrder == null){
+            throw new ServerException("订单信息不存在");
+        }
+        if(userOrder.getStatus() != OrderStatusEnum.WAITING_FOR_PAYMENT.getValue()){
+            throw new ServerException("订单已付款，取消失败");
+        }
+        userOrder.setStatus(OrderStatusEnum.CANCELLED.getValue());
+        userOrder.setCancelReason(query.getCancelReason());
+        userOrder.setCloseTime(LocalDateTime.now());
+        baseMapper.updateById(userOrder);
+        OrderDetailVO orderDetailVO = UserOrderDetailConvert.INSTANCE.convertToOrderDetailVO(userOrder);
+        UserShippingAddress userShippingAddress = userShippingAddressMapper.selectById(userOrder.getAddressId());
+        if (userShippingAddress != null){
+            orderDetailVO.setReceiverContact(userShippingAddress.getReceiver());
+            orderDetailVO.setReceiverAddress(userShippingAddress.getAddress());
+            orderDetailVO.setReceiverMobile(userShippingAddress.getContact());
+        }
+        List<UserOrderGoods> goodsList = userOrderGoodsMapper.selectList(new LambdaQueryWrapper<UserOrderGoods>().eq(UserOrderGoods::getOrderId,userOrder.getId()));
+        orderDetailVO.setSkus((goodsList));
+
+        return orderDetailVO;
     }
 
     @Async
