@@ -6,10 +6,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.wk.shop_online.query.CancelGoodsQuery;
 import com.wk.shop_online.query.OrderPreQuery;
 import com.wk.shop_online.query.OrderQuery;
-import com.wk.shop_online.vo.OrderDetailVO;
-import com.wk.shop_online.vo.SubmitOrderVO;
-import com.wk.shop_online.vo.UserAddressVO;
-import com.wk.shop_online.vo.UserOrderVO;
+import com.wk.shop_online.vo.*;
 
 import java.util.List;
 
@@ -45,4 +42,6 @@ public interface UserOrderService extends IService<UserOrder> {
     void consignOrder(Integer id);
 
     OrderDetailVO receiptOrder(Integer id);
+
+    OrderLogisticVO getOrderLogistics(Integer id);
 }
