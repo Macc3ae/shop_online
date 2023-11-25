@@ -1,16 +1,20 @@
 package com.wk.shop_online.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wk.shop_online.Enums.OrderStatusEnum;
 import com.wk.shop_online.common.exception.ServerException;
+import com.wk.shop_online.convert.UserOrderDetailConvert;
 import com.wk.shop_online.entity.Goods;
 import com.wk.shop_online.entity.UserOrder;
 import com.wk.shop_online.entity.UserOrderGoods;
+import com.wk.shop_online.entity.UserShippingAddress;
 import com.wk.shop_online.mapper.GoodsMapper;
 import com.wk.shop_online.mapper.UserOrderMapper;
 import com.wk.shop_online.query.OrderGoodsQuery;
 import com.wk.shop_online.service.UserOrderGoodsService;
 import com.wk.shop_online.service.UserOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wk.shop_online.vo.OrderDetailVO;
 import com.wk.shop_online.vo.UserOrderVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -18,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -98,6 +104,35 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
         userOrder.setTotalFreight(totalFreight.doubleValue());
         baseMapper.updateById(userOrder);
         return userOrder.getId();
+    }
+
+    @Override
+    public OrderDetailVO getOrderDetail(Integer id) {
+        UserOrder userOrder = baseMapper.selectById(id);
+        if(userOrder == null){
+            throw new ServerException("订单信息不存在");
+        }
+        OrderDetailVO orderDetailVO = UserOrderDetailConvert.INSTANCE.convertToOrderDetailVO(userOrder);
+        orderDetailVO.setTotalMoney(userOrder.getTotalPrice());
+
+        UserShippingAddress userShippingAddress = userShippingAddressMapper.selectById(userOrder.getAddressId());
+
+        if (userShippingAddress == null){
+            throw new ServerException("收货信息不存在");
+        }
+        orderDetailVO.setReceiverAddress(userShippingAddress.getAddress());
+        orderDetailVO.setReceiverMobile(userShippingAddress.getContact());
+        orderDetailVO.setReceiverContact(userShippingAddress.getReceiver());
+
+        List<UserOrderGoods> list = userOrderGoodsMapper.seletList(new LambdaQueryWrapper<UserOrderGoods>().eq(UserOrderGoods::getOrderId,id));
+        orderDetailVO.setSkus(list);
+        orderDetailVO.setPayLatestTime(userOrder.getCreateTime().plusMinutes(30));
+
+        if(orderDetailVO.getPayLatestTime().isAfter(LocalDateTime.now())){
+            Duration duration = Duration.between(LocalDateTime.now(),orderDetailVO.getPayLatestTime());
+            orderDetailVO.setCountdown(duration.toMillisPart());
+        }
+        return orderDetailVO;
     }
 
     @Async
