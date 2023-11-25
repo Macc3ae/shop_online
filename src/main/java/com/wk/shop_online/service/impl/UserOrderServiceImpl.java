@@ -1,8 +1,10 @@
 package com.wk.shop_online.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wk.shop_online.Enums.OrderStatusEnum;
 import com.wk.shop_online.common.exception.ServerException;
+import com.wk.shop_online.common.result.PageResult;
 import com.wk.shop_online.convert.UserAddressConvert;
 import com.wk.shop_online.convert.UserOrderDetailConvert;
 import com.wk.shop_online.entity.*;
@@ -10,6 +12,7 @@ import com.wk.shop_online.mapper.GoodsMapper;
 import com.wk.shop_online.mapper.UserOrderMapper;
 import com.wk.shop_online.query.OrderGoodsQuery;
 import com.wk.shop_online.query.OrderPreQuery;
+import com.wk.shop_online.query.OrderQuery;
 import com.wk.shop_online.service.UserOrderGoodsService;
 import com.wk.shop_online.service.UserOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -239,13 +242,62 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
         orderInfoVO.setGoodsCount(query.getCount());
         orderInfoVO.setTotalPayPrice(userOrderGoodsVO.getTotalPayPrice());
         orderInfoVO.setTotalPrice(userOrderGoodsVO.getTotalPrice());
-        orderInfoVO.getPostFee(goods.getFreight());
+        orderInfoVO.setPostFee(goods.getFreight());
         orderInfoVO.setDiscountPrice(goods.getDiscount());
 
         submitOrderVO.setUserAddresses(addressList);
         submitOrderVO.setGoods(goodList);
         submitOrderVO.setSummary(orderInfoVO);
         return submitOrderVO;
+    }
+
+    @Override
+    public SubmitOrderVO getRepurchaseOrderDetail(Integer id) {
+        SubmitOrderVO submitOrderVO = new SubmitOrderVO();
+        UserOrder userOrder = baseMapper.selectById(id);
+        List<UserAddressVO> addressList = getAddressListByUserId(userOrder.getUserId(), userOrder.getAddressId());
+        List<UserOrderGoodsVO> goodsList = goodsMapper.getGoodsListByOrderId(id);
+        OrderInfoVO orderInfoVO = new OrderInfoVO();
+        orderInfoVO.setGoodsCount(userOrder.getTotalCount());
+        orderInfoVO.setTotalPrice(userOrder.getTotalPrice());
+        orderInfoVO.setPostFee(userOrder.getTotalFreight());
+        orderInfoVO.setTotalPayPrice(userOrder.getTotalPrice());
+        orderInfoVO.setDiscountPrice(0.00);
+        submitOrderVO.setUserAddresses(addressList);
+        submitOrderVO.setGoods(goodsList);
+        submitOrderVO.setSummary(orderInfoVO);
+        return submitOrderVO;
+    }
+
+    @Override
+    public PageResult<OrderDetailVO> getOrderList(OrderQuery query) {
+        List<OrderDetailVO> list = new ArrayList<>();
+        Page<UserOrder> page = new Page<>(query.getPage(),query.getPage());
+        LambdaQueryWrapper<Object> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserOrder::getUserId,query.getUserId());
+        if(query.getOrderType() != null && query.getOrderType() != 0) {
+            wrapper.eq(UserOrder::getStatus,query.getOrderType());
+        }
+        wrapper.orderByDesc(UserOrder::getCreateTime);
+
+        List<UserOrder> orderRecords = baseMapper.selectPage(page,wrapper).getRecords();
+
+        if(orderRecords.size() == 0){
+            return new PageResult<>(page.getTotal(),query.getPageSize(),query.getPage(),page.getPages(),list);
+        }
+        for(UserOrder userOrder : orderRecords){
+            OrderDetailVO orderDetailVO = UserOrderDetailConvert.INSTANCE.convertToOrderDetailVO(userOrder);
+            UserShippingAddress userShippingAddress = userShippingAddressMapper.selectById(userOrder.getAddressId());
+            if (userShippingAddress != null){
+                orderDetailVO.setReceiverContact(userShippingAddress.getReceiver());
+                orderDetailVO.setReceiverAddress(userShippingAddress.getAddress());
+                orderDetailVO.setReceiverMobile(userShippingAddress.getContact());
+            }
+            List<UserOrderGoods> userOrderGoods = userOrderGoodsMapper.selectList(new LambdaQueryWrapper<UserOrderGoods>().eq(UserOrderGoods::getOrderId,userOrder.getId()));
+            orderDetailVO.setSkus(userOrderGoods);
+            list.add(orderDetailVO);
+        }
+        return new PageResult<>(page.getTotal(),query.getPageSize(),query.getPage(), page.getPages(), list);
     }
 
     @Async
