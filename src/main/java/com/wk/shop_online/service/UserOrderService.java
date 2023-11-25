@@ -39,4 +39,6 @@ public interface UserOrderService extends IService<UserOrder> {
     OrderDetailVO cancelOrder(CancelGoodsQuery query);
 
     void deleteOrder(List<Integer> ids,Integer userId);
+
+    void payOrder(Integer id);
 }
