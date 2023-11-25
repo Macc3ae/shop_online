@@ -3,19 +3,18 @@ package com.wk.shop_online.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wk.shop_online.Enums.OrderStatusEnum;
 import com.wk.shop_online.common.exception.ServerException;
+import com.wk.shop_online.convert.UserAddressConvert;
 import com.wk.shop_online.convert.UserOrderDetailConvert;
-import com.wk.shop_online.entity.Goods;
-import com.wk.shop_online.entity.UserOrder;
-import com.wk.shop_online.entity.UserOrderGoods;
-import com.wk.shop_online.entity.UserShippingAddress;
+import com.wk.shop_online.entity.*;
 import com.wk.shop_online.mapper.GoodsMapper;
 import com.wk.shop_online.mapper.UserOrderMapper;
 import com.wk.shop_online.query.OrderGoodsQuery;
 import com.wk.shop_online.service.UserOrderGoodsService;
 import com.wk.shop_online.service.UserOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wk.shop_online.vo.OrderDetailVO;
-import com.wk.shop_online.vo.UserOrderVO;
+import com.wk.shop_online.vo.*;
+import lombok.AllArgsConstructor;
+import org.mapstruct.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -28,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -133,6 +133,75 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
             orderDetailVO.setCountdown(duration.toMillisPart());
         }
         return orderDetailVO;
+    }
+
+    @Override
+    public SubmitOrderVO getPreOrderDetail(Integer userId) {
+        SubmitOrderVO submitOrderVO = new SubmitOrderVO();
+        List<UserShoppingCart> cartList = userShoppingCartMapper.selectList(new LambdaQueryWrapper<UserShoppingCart>().eq(UserShoppingCart::getUserId,userId).eq(UserShoppingCart::getSelected,true));
+        if (cartList.size() == 0){
+            return null;
+        }
+        List<UserAddressVO> addressList = getAddressListByUserId(userId,null);
+
+        BigDecimal totalPrice = new BigDecimal(0);
+        Integer totalCount = 0;
+        BigDecimal totalPayPrice = new BigDecimal(0);
+        BigDecimal totalFreight = new BigDecimal(0);
+
+        List<UserOrderGoodsVO> goodList = new ArrayList<>();
+        for (UserShoppingCart shoppingCart : cartList){
+            Goods goods = goodsMapper.selectById(shoppingCart.getGoodsId());
+            UserOrderGoodsVO userOrderGoodsVO = new UserOrderGoodsVO();
+            userOrderGoodsVO.setId(goods.getId());
+            userOrderGoodsVO.setName(goods.getName());
+            userOrderGoodsVO.setPicture(goods.getCover());
+            userOrderGoodsVO.setCount(shoppingCart.getCount());
+            userOrderGoodsVO.setAttrsText(shoppingCart.getAttrsText());
+            userOrderGoodsVO.setPrice(goods.getOldPrice());
+            userOrderGoodsVO.setPayPrice(goods.getPrice());
+            userOrderGoodsVO.setTotalPrice(goods.getFreight() + goods.getPrice() * shoppingCart.getCount());
+            userOrderGoodsVO.setTotalPayPrice(userOrderGoodsVO.getTotalPrice());
+
+            BigDecimal freight = new BigDecimal(goods.getFreight().toString());
+            BigDecimal goodsPrice = new BigDecimal(goods.getPrice().toString());
+            BigDecimal count = new BigDecimal(shoppingCart.getCount().toString());
+
+            BigDecimal price = goodsPrice.multiply(count).add(freight);
+
+            totalPrice = totalPrice.add(price);
+            totalCount += userOrderGoodsVO.getCount();
+            totalPayPrice = totalPayPrice.add(new BigDecimal(userOrderGoodsVO.getTotalPayPrice().toString()));
+            totalFreight = totalFreight.add(freight);
+            goodList.add(userOrderGoodsVO);
+        }
+        OrderInfoVO orderInfoVO = new OrderInfoVO();
+        orderInfoVO.setGoodsCount(totalCount);
+        orderInfoVO.setTotalPayPrice(totalPayPrice.doubleValue());
+        orderInfoVO.setTotalPrice(totalPrice.doubleValue());
+        orderInfoVO.setPostFee(totalFreight.doubleValue());
+
+        submitOrderVO.setUserAddresses(addressList);
+        submitOrderVO.setGoods(goodList);
+        submitOrderVO.setSummary(orderInfoVO);
+        return submitOrderVO;
+    }
+
+    @Override
+    public List<UserAddressVO> getAddressListByUserId(Integer userId, Integer addressId) {
+        List<UserShippingAddress> list = userShippingAddressMapper.selectList(new LambdaQueryWrapper<UserShippingAddress>().eq(UserShippingAddress::getUserId,userId));
+        UserShippingAddress userShippingAddress = null;
+        UserAddressVO userAddressVO;
+        if (list.size() == 0) {
+            return null;
+        }
+        if (addressId != null) {
+            userShippingAddress = list.stream().filter(item -> item.getId().equals(addressId)).collect(Collectors.toList()).get(0);
+            list.remove(userShippingAddress);
+        }
+        List<UserAddressVO> addressList = UserAddressConvert.INSTANCE.convertToUserAddressVOList(list);
+        if (userShippingAddress)
+        return null;
     }
 
     @Async
