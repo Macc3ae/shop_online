@@ -360,6 +360,45 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
         cancelScheduledTask();
     }
 
+    @Override
+    public void consignOrder(Integer id) {
+        UserOrder userOrder = baseMapper.selectById(id);
+        if (userOrder == null){
+            throw new ServerException("订单不存在");
+        }
+        if (userOrder.getStatus() != OrderStatusEnum.WAITING_FOR_SHIPMENT.getValue()){
+            throw new ServerException("订单已发货");
+        }
+        userOrder.setStatus((OrderStatusEnum.WAITING_FOR_DELIVERY.getValue()));
+        userOrder.setConsignTime(LocalDateTime.now());
+        baseMapper.updateById(userOrder);
+    }
+
+    @Override
+    public OrderDetailVO receiptOrder(Integer id) {
+        UserOrder userOrder = baseMapper.selectById(id);
+        if (userOrder == null){
+            throw new ServerException("订单不存在");
+        }
+        if (userOrder.getStatus() != OrderStatusEnum.WAITING_FOR_DELIVERY.getValue()){
+            throw new ServerException("暂时不能确认收货");
+        }
+        userOrder.setStatus((OrderStatusEnum.WAITING_FOR_REVIEW.getValue()));
+        userOrder.setEndTime(LocalDateTime.now());
+        baseMapper.updateById(userOrder);
+        OrderDetailVO orderDetailVO = UserOrderDetailConvert.INSTANCE.convertToOrderDetailVO(userOrder);
+        UserShippingAddress userShippingAddress = userShippingAddressMapper.selectById(userOrder.getAddressId());
+        if (userShippingAddress != null){
+            orderDetailVO.setReceiverContact(userShippingAddress.getReceiver());
+            orderDetailVO.setReceiverAddress(userShippingAddress.getAddress());
+            orderDetailVO.setReceiverMobile(userShippingAddress.getContact());
+        }
+        List<UserOrderGoods> goodsList = userOrderGoodsMapper.selectList(new LambdaQueryWrapper<UserOrderGoods>().eq(UserOrderGoods::getOrderId,userOrder.getId()));
+        orderDetailVO.setSkus((goodsList));
+        return orderDetailVO;
+
+    }
+
     @Async
     public void scheduleOrderCancel(UserOrder userOrder){
         cancelTask = executorService.schedule(() ->{

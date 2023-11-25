@@ -41,4 +41,8 @@ public interface UserOrderService extends IService<UserOrder> {
     void deleteOrder(List<Integer> ids,Integer userId);
 
     void payOrder(Integer id);
+
+    void consignOrder(Integer id);
+
+    OrderDetailVO receiptOrder(Integer id);
 }
