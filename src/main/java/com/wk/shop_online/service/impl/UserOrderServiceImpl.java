@@ -9,6 +9,7 @@ import com.wk.shop_online.entity.*;
 import com.wk.shop_online.mapper.GoodsMapper;
 import com.wk.shop_online.mapper.UserOrderMapper;
 import com.wk.shop_online.query.OrderGoodsQuery;
+import com.wk.shop_online.query.OrderPreQuery;
 import com.wk.shop_online.service.UserOrderGoodsService;
 import com.wk.shop_online.service.UserOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -202,6 +203,49 @@ public class UserOrderServiceImpl extends ServiceImpl<UserOrderMapper, UserOrder
         List<UserAddressVO> addressList = UserAddressConvert.INSTANCE.convertToUserAddressVOList(list);
         if (userShippingAddress)
         return null;
+    }
+
+    @Override
+    public SubmitOrderVO getPreNowOrderDetail(OrderPreQuery query) {
+        SubmitOrderVO submitOrderVO = new SubmitOrderVO();
+        List<UserAddressVO> addressList = getAddressListByUserId(query.getUserId(), query.getAddressId());
+
+        List<UserOrderGoodsVO> goodList = new ArrayList<>();
+
+        Goods goods = goodsMapper.selectById(query.getId());
+        if(goods == null){
+            throw new ServerException("商品不存在");
+        }
+        if(query.getCount() > goods.getInventory()){
+            throw new ServerException("商品库存不足");
+        }
+        UserOrderGoodsVO userOrderGoodsVO = new UserOrderGoodsVO();
+        userOrderGoodsVO.setId(goods.getId());
+        userOrderGoodsVO.setName(goods.getName());
+        userOrderGoodsVO.setPicture(goods.getCover());
+        userOrderGoodsVO.setCount(query.getCount());
+        userOrderGoodsVO.setAttrsText(query.getAttrsText());
+        userOrderGoodsVO.setPrice(goods.getOldPrice());
+        userOrderGoodsVO.setPayPrice(goods.getPrice());
+
+        BigDecimal freight = new BigDecimal(goods.getFreight().toString());
+        BigDecimal price = new BigDecimal(goods.getPrice().toString());
+        BigDecimal count = new BigDecimal(query.getCount().toString());
+        userOrderGoodsVO.setTotalPrice(price.multiply(count).add(freight).doubleValue());
+        userOrderGoodsVO.setTotalPayPrice(userOrderGoodsVO.getTotalPrice());
+        goodList.add(userOrderGoodsVO);
+
+        OrderInfoVO orderInfoVO = new OrderInfoVO();
+        orderInfoVO.setGoodsCount(query.getCount());
+        orderInfoVO.setTotalPayPrice(userOrderGoodsVO.getTotalPayPrice());
+        orderInfoVO.setTotalPrice(userOrderGoodsVO.getTotalPrice());
+        orderInfoVO.getPostFee(goods.getFreight());
+        orderInfoVO.setDiscountPrice(goods.getDiscount());
+
+        submitOrderVO.setUserAddresses(addressList);
+        submitOrderVO.setGoods(goodList);
+        submitOrderVO.setSummary(orderInfoVO);
+        return submitOrderVO;
     }
 
     @Async

@@ -2,6 +2,7 @@ package com.wk.shop_online.service;
 
 import com.wk.shop_online.entity.UserOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.wk.shop_online.query.OrderPreQuery;
 import com.wk.shop_online.vo.OrderDetailVO;
 import com.wk.shop_online.vo.SubmitOrderVO;
 import com.wk.shop_online.vo.UserAddressVO;
@@ -25,4 +26,6 @@ public interface UserOrderService extends IService<UserOrder> {
     SubmitOrderVO getPreOrderDetail(Integer userId);
 
     List<UserAddressVO> getAddressListByUserId(Integer userId,Integer addressId);
+
+    SubmitOrderVO getPreNowOrderDetail(OrderPreQuery query);
 }
