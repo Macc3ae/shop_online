@@ -2,6 +2,7 @@ package com.wk.shop_online.service;
 
 import com.wk.shop_online.entity.UserOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.wk.shop_online.vo.UserOrderVO;
 
 /**
  * <p>
@@ -12,5 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2023-11-09
  */
 public interface UserOrderService extends IService<UserOrder> {
-
+    Integer addGoodsOrder(UserOrderVO orderVO);
 }

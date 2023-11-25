@@ -12,5 +12,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2023-11-09
  */
 public interface UserOrderGoodsService extends IService<UserOrderGoods> {
-
+    void batchUserOrderGoods(UserOrderService orderService);
 }
